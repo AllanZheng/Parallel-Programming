@@ -4,7 +4,7 @@
 #include <iostream>
 
 #define POLY2(i, j, imin, jmin, ni) (((i) - (imin)) + ((j)-(jmin)) * (ni))
-
+ double sum3=0;
 Mesh::Mesh(const InputFile* input):
     input(input)
 {
@@ -63,16 +63,25 @@ void Mesh::allocate()
     double ymin = min_coords[1];
 
     int i;
-    #pragma omp parallel for schedule(static)     
+    double sum1=0,sum2=0;
+    double time1 =omp_get_wtime();
+    #pragma omp parallel for schedule(static) \
+         firstprivate(xmin,nx)     
     for (  i=0; i < nx+2; i++) {
         cellx[i]=xmin+dx[0]*(i-1);
     }
-
-    #pragma omp parallel for schedule(static)    
+       double time2 =omp_get_wtime();
+       sum1+=(time2-time1)*1000;
+        std::cout<<"time of Mesh loop1:"<<sum1<<std::endl;
+        time1 =omp_get_wtime();
+    #pragma omp parallel for schedule(static) \
+       firstprivate(ny,ymin) 
     for (  i = 0; i < ny+2; i++) {
         celly[i]=ymin+dx[1]*(i-1);
     }
-
+    time2 =omp_get_wtime();
+    sum2+=(time2-time1)*1000;
+    std::cout<<"time of Mesh loop2:"<<sum2<<std::endl;
 }
 
 double* Mesh::getU0()
@@ -135,9 +144,11 @@ double Mesh::getTotalTemperature()
         int y_max = max[1]; 
 
         int nx = n[0]+2;
-      
+       
         int n1=0;
-        #pragma omp parallel for reduction(+:temperature) collapse(2) 
+        double time1 =omp_get_wtime();
+        #pragma omp parallel for reduction(+:temperature) collapse(2) \
+            firstprivate(nx,x_max,x_min,y_max,y_min)
         for(int k=y_min; k <= y_max; k++) {
             
             for(int j=x_min; j <= x_max; j++) {
@@ -148,7 +159,9 @@ double Mesh::getTotalTemperature()
             }
         
         }
-        
+        double time2 =omp_get_wtime();
+        sum3+=(time2-time1)*1000;
+         std::cout<<"time of Mesh loop3:"<<sum3<<std::endl;
         return temperature;
     } else {
         return 0.0;

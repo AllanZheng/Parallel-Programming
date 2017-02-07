@@ -52,8 +52,8 @@ void Driver::run() {
 
     int step = 0;
     double t_current;
-    double  begin_time = omp_get_wtime();
-    double sum_cal_time = 0.0;
+    
+
     for(t_current = t_start; t_current < t_end; t_current += dt) {
         step = t_current/dt + 1;
 
@@ -61,30 +61,26 @@ void Driver::run() {
         
         diffusion->doCycle(dt);
 
-        //if(step % vis_frequency == 0 && vis_frequency != -1)
-           // writer->write(step, t_current);
-        double time1 =omp_get_wtime();
+        if(step % vis_frequency == 0 && vis_frequency != -1)
+            writer->write(step, t_current);
+  
         if(step % summary_frequency == 0 && summary_frequency != -1) {
             double temperature = mesh->getTotalTemperature();
             std::cout << "+\tcurrent total temperature: " << temperature << std::endl;
              double time2 =omp_get_wtime();
-                std::cout<<"Each calculated time:"<<(time2-time1)*1000<<std::endl;
-                sum_cal_time+=(time2-time1)*1000;
+              
           
         }
-        std::cout<<"Overall calculated time:"<<sum_cal_time<<std::endl;
+     
 
-    }
-      
-   //if(step % vis_frequency != 0 && vis_frequency != -1)
-     //   writer->write(step, t_current);
+    } 
+   if(step % vis_frequency != 0 && vis_frequency != -1)
+        writer->write(step, t_current);
 
     std::cout << std::endl;
     std::cout << "+++++++++++++++++++++" << std::endl;
     std::cout << "   Run completete.   " << std::endl;
     std::cout << "+++++++++++++++++++++" << std::endl;
-     double finish_time =omp_get_wtime();
-
-        std::cout<<"Overall Running time:"<<(finish_time-begin_time)*1000<<std::endl;
+  
 
 }

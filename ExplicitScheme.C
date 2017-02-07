@@ -3,7 +3,7 @@
 #include <iostream>
 
 #define POLY2(i, j, imin, jmin, ni) (((i) - (imin)) + (((j)-(jmin)) * (ni)))
-
+    double sum2=0,sum1=0,sum=0;
 ExplicitScheme::ExplicitScheme(const InputFile* input, Mesh* m) :
     mesh(m)
 {
@@ -43,13 +43,21 @@ void ExplicitScheme::reset()
 
     int nx = mesh->getNx()[0]+2;
     int i;
-    #pragma omp parallel for schedule(static) collapse(2) 
+    
+    //double time1 =omp_get_wtime();
+    #pragma omp parallel for schedule(static) collapse(2) \
+    private(nx,i,x_min,x_max,y_min,y_max)
     for(int k = y_min-1; k <= y_max+1; k++) {
         for(int j = x_min-1; j <=  x_max+1; j++) {
             i = POLY2(j,k,x_min-1,y_min-1,nx);
             u0[i] = u1[i];
         }
     }
+    /*
+    double time2 =omp_get_wtime();
+    sum+=(time2-time1)*1000;
+    std::cout<<"time of ExplicitScheme loop1:"<<sum<<std::endl;
+    */
 }
 
 void ExplicitScheme::diffuse(double dt)
@@ -68,7 +76,10 @@ void ExplicitScheme::diffuse(double dt)
     double rx = dt/(dx*dx);
     double ry = dt/(dy*dy);
     int n1,n2,n3,n4,n5;
-    #pragma omp parallel for schedule(static) collapse(2) 
+
+    //double time1 =omp_get_wtime();
+    #pragma omp parallel for schedule(static) collapse(2) \
+     private(n1,n2,n3,n4,n5,nx,rx,ry,x_min,x_max,y_min,y_max)
     for(int k=y_min; k <= y_max; k++) {
         for(int j=x_min; j <= x_max; j++) {
 
@@ -82,7 +93,11 @@ void ExplicitScheme::diffuse(double dt)
                 + ry*u0[n4] + ry*u0[n5];
         }
     }
-   
+    /*
+   double time2 =omp_get_wtime();
+   sum1+=(time2-time1)*1000;
+    std::cout<<"time of ExplicitScheme loop2:"<<sum1<<std::endl;
+    */
 }
 
 void ExplicitScheme::reflectBoundaries(int boundary_id)
@@ -95,12 +110,14 @@ void ExplicitScheme::reflectBoundaries(int boundary_id)
 
     int nx = mesh->getNx()[0]+2;
 
+    //double time1 =omp_get_wtime();
     switch(boundary_id) {
         case 0: 
             /* top */
             {
                  int n1,n2;
-                #pragma omp parallel for schedule(static) 
+               # pragma omp parallel for schedule(static) \
+                   private(nx,n1,n2,x_min,x_max,y_min,y_max)
                 for(int j = x_min; j <= x_max; j++) {
                     n1 = POLY2(j, y_max, x_min-1, y_min-1, nx);
                     n2 = POLY2(j, y_max+1, x_min-1, y_min-1, nx);
@@ -113,7 +130,8 @@ void ExplicitScheme::reflectBoundaries(int boundary_id)
             {
 
                  int n1,n2;
-                #pragma omp parallel for schedule(static)   
+                #pragma omp parallel for schedule(static)  \
+                  private(nx,n1,n2,x_min,x_max,y_min,y_max) 
                 for(int k = y_min; k <= y_max; k++) {
                     n1 = POLY2(x_max, k, x_min-1, y_min-1, nx);
                      n2 = POLY2(x_max+1, k, x_min-1, y_min-1, nx);
@@ -125,7 +143,8 @@ void ExplicitScheme::reflectBoundaries(int boundary_id)
             /* bottom */
             {
                 int n1,n2;
-                #pragma omp parallel for schedule(static)   
+                #pragma omp parallel for schedule(static) \
+                  private(nx,n1,n2,x_min,x_max,y_min,y_max)  
                 for(int j = x_min; j <= x_max; j++) {
                     n1 = POLY2(j, y_min, x_min-1, y_min-1, nx);
                     n2 = POLY2(j, y_min-1, x_min-1, y_min-1, nx);
@@ -137,7 +156,8 @@ void ExplicitScheme::reflectBoundaries(int boundary_id)
             /* left */
             {
                 int n1,n2;
-                #pragma omp parallel for schedule(static)     
+                #pragma omp parallel for schedule(static) \
+                  private(nx,n1,n2,x_min,x_max,y_min,y_max)    
                 for(int k = y_min; k <= y_max; k++) {
                     n1 = POLY2(x_min, k, x_min-1, y_min-1, nx);
                     n2 = POLY2(x_min-1, k, x_min-1, y_min-1, nx);
@@ -147,4 +167,9 @@ void ExplicitScheme::reflectBoundaries(int boundary_id)
             } break;
         default: std::cerr << "Error in reflectBoundaries(): unknown boundary id (" << boundary_id << ")" << std::endl;
     }
+    /*
+    double time2 =omp_get_wtime();
+    sum2+=(time2-time1)*1000;
+    std::cout<<"time of ExplicitScheme loop3:"<<sum2<<std::endl;
+    */
 }

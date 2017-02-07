@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
 #include <cstdlib>
-
+#include <omp.h>
 #include "InputFile.h"
 #include "Driver.h"
 
@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
         std::cerr << "Usage: deqn <filename>" << std::endl;
         exit(1);
     }
-
+   double  begin_time = omp_get_wtime();
     const char* filename = argv[1];
     InputFile input(filename);
 
@@ -36,6 +36,8 @@ int main(int argc, char *argv[])
     Driver driver(&input, problem_name);
 
     driver.run();
+   double finish_time =omp_get_wtime();
 
+        std::cout<<"Overall Running time:"<<(finish_time-begin_time)*1000<<std::endl;
     return 0;
 }

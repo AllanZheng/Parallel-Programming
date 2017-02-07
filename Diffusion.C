@@ -39,6 +39,8 @@ void Diffusion::init()
     double* cellx;
     double* celly;
     int x_max, y_max, nx;
+   //double time1 =omp_get_wtime();
+   double sum =0;
      #pragma omp parallel
     {
     u0 = mesh->getU0();
@@ -48,13 +50,14 @@ void Diffusion::init()
 
     cellx = mesh->getCellX();
     celly = mesh->getCellY();
-
+   
     nx = x_max+2;
    
     if(!subregion.empty()) {
+
         
-        #pragma omp for schedule(static) collapse(2) 
-  
+       #pragma omp for schedule(static) collapse(2) \
+            firstprivate(nx,x_max,y_max)
         for (int j = 0; j < y_max+2; j++) {
             for (int i = 0; i < x_max+2; i++) {
                 if (celly[j] > subregion[1] && celly[j] <= subregion[3] &&
@@ -67,8 +70,8 @@ void Diffusion::init()
             }
         }
     } else {
-          #pragma omp for schedule(static) collapse(2) 
-            
+          #pragma omp for schedule(static) collapse(2)  \
+            firstprivate(nx,x_max,y_max)   
         for (int j = 0; j < y_max+2; j++) {
             for (int i = 0; i < x_max+2; i++) {
                 u0[i+j*nx] = 0.0;
@@ -76,6 +79,11 @@ void Diffusion::init()
         }
     }
 }
+/*
+double time2 =omp_get_wtime();
+sum+=(time2-time1)*1000;
+    std::cout<<"time of Diffusion loop:"<<sum<<std::endl;
+*/
     scheme->init();
 }
 
